@@ -31,7 +31,7 @@ services:
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-symfony}"]
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER:-root} -d ${POSTGRES_DB:-app}'"]
       interval: 10s
       timeout: 5s
       retries: 5
