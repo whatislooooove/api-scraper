@@ -7,9 +7,6 @@ services:
     working_dir: /var/www
     volumes:
       - ./symfony:/var/www
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?serverVersion=18&charset=utf8
-      APP_ENV: dev
     networks:
       - internal
     restart: unless-stopped

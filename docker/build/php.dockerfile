@@ -29,8 +29,6 @@ WORKDIR /var/www
 COPY symfony/composer.json ./
 COPY symfony/composer.lock ./
 RUN composer install --no-autoloader --no-scripts --no-progress
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.alpine.sh' | sh \
-    && apk add symfony-cli
 
 # Копируем весь исходный код
 COPY ./symfony .
