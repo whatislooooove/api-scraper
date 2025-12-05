@@ -5,6 +5,7 @@ services:
       dockerfile: ./docker/build/php.dockerfile
     container_name: php
     working_dir: /var/www
+    user: "root"
     volumes:
       - ./symfony:/var/www
     networks:
