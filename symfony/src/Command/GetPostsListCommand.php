@@ -5,7 +5,6 @@ namespace App\Command;
 use App\Service\TargetApiService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -16,6 +15,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 )]
 class GetPostsListCommand extends Command
 {
+    const string GET_POSTS_LIST_API_URL = 'https://proof.moneymediagroup.co.uk/api/posts';
+
     public function __construct(private TargetApiService $apiHandler)
     {
         parent::__construct();
@@ -23,15 +24,12 @@ class GetPostsListCommand extends Command
 
     protected function configure(): void
     {
-        $this
-            ->addArgument('arg1', InputArgument::OPTIONAL, 'Argument description')
-            ->addOption('option1', null, InputOption::VALUE_NONE, 'Option description');
+        $this->addOption('threads', null, InputOption::VALUE_OPTIONAL, 'Threads count for async crawling', '100');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $roundedMaxPage = $this->apiHandler->getRoundedMaxPage();
-        // stub...
         return Command::SUCCESS;
     }
 }

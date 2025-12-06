@@ -3,21 +3,19 @@
 namespace App\Service;
 
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class TargetApiService
 {
     const string POSTS_LIST_API_URL = 'https://proof.moneymediagroup.co.uk/api/posts';
     const array MAX_PAGE_POINTS = [10, 100, 500, 3000, 10000, 15000, 30000, 50000];
-    const int MAX_PAGE_ACCURACY = 1000;
+    const int MAX_PAGE_ACCURACY = 0;
 
     // TODO: указать тип
-    private $client;
     private int $roundedMaxPage;
 
-    public function __construct()
+    public function __construct(private HttpClientInterface $client)
     {
-        // TODO: обернуть в retryable
-        $this->client = HttpClient::create();
     }
 
     public function getRoundedMaxPage(): int

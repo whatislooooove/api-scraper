@@ -18,3 +18,20 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    http_client.retry:
+        class: Symfony\Component\HttpClient\RetryableHttpClient
+        arguments:
+            - '@http_client'
+            - '@http_client.retry_strategy'
+            - 5
+            - false
+
+    http_client.retry_strategy:
+        class: Symfony\Component\HttpClient\Retry\GenericRetryStrategy
+        arguments:
+            - [ 500 ]
+            - 100
+            - 2
+            - 1000
+            - [ 'timeout' ]
