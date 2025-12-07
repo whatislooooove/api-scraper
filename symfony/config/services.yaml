@@ -35,3 +35,7 @@ services:
             - 2
             - 1000
             - [ 'timeout' ]
+
+    App\Service\ProxyManagerService:
+        arguments:
+            $proxyList: '%http_proxy_list%'
