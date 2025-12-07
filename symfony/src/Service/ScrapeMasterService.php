@@ -32,8 +32,8 @@ class ScrapeMasterService
                 PHP_BINARY,
                 'bin/console',
                 'scrape:worker',
-                sprintf('--from=%d', $chunkSize * ($i - 1)),
-                sprintf('--to=%d', $chunkSize * $i - 1),
+                sprintf('--from=%d', $chunkSize * ($i - 1) + 1),
+                sprintf('--to=%d', $chunkSize * $i),
                 sprintf('--proxy=%s', $this->proxy->getProxyById($i - 1)),
             ];
 

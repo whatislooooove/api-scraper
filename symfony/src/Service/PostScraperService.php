@@ -2,20 +2,30 @@
 
 namespace App\Service;
 
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-class TargetApiService
+class PostScraperService
 {
     const string POSTS_LIST_API_URL = 'https://proof.moneymediagroup.co.uk/api/posts';
+    const string POST_DETAIL_API_URL = 'https://proof.moneymediagroup.co.uk/api/post/%s';
     const array MAX_PAGE_POINTS = [10, 100, 500, 3000, 10000, 15000, 30000, 50000];
-    const int MAX_PAGE_ACCURACY = 0;
+    const int MAX_PAGE_ACCURACY = 0; // 0 - точный номер последней страницы
 
-    // TODO: указать тип
     private int $roundedMaxPage;
+    private ?string $proxy = null;
 
     public function __construct(private HttpClientInterface $client)
     {
+    }
+
+    public function setProxy(?string $proxy): void
+    {
+        $this->proxy = $proxy;
+    }
+
+    public function getProxy(): ?string
+    {
+        return $this->proxy;
     }
 
     public function getRoundedMaxPage(): int
@@ -25,6 +35,28 @@ class TargetApiService
         }
 
         return $this->roundedMaxPage;
+    }
+
+    public function getPostsList(int $page = 1): array
+    {
+        $response = $this->client->request(
+            'GET',
+            self::POSTS_LIST_API_URL,
+            $this->makePostListRequestParams($page)
+        );
+
+        return json_decode($response->getContent(), true);
+    }
+
+    public function getPostDetail(string $uuid): array
+    {
+        $response = $this->client->request(
+            'GET',
+            sprintf(self::POST_DETAIL_API_URL, $uuid),
+            $this->makePostDetailRequestParams()
+        );
+
+        return json_decode($response->getContent(), true);
     }
 
     private function recursiveBinarySearch(int $minBound, int $maxBound): int
@@ -68,5 +100,27 @@ class TargetApiService
                 break;
             }
         }
+    }
+
+    private function makePostListRequestParams(int $page): array
+    {
+        $params = [
+            'query' => [
+                'page' => $page
+            ],
+        ];
+
+        if (!$this->proxy) {
+            $params['proxy'] = $this->proxy;
+        }
+
+        return $params;
+    }
+
+    private function makePostDetailRequestParams(): array
+    {
+        return $this->getProxy() ? [
+            'proxy' => $this->getProxy()
+        ] : [];
     }
 }

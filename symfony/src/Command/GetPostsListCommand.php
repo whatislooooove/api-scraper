@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\Factory\ScrapeServicesFactory;
+use App\Service\PostScraperService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,10 +16,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 )]
 class GetPostsListCommand extends Command
 {
-    const string GET_POSTS_LIST_API_URL = 'https://proof.moneymediagroup.co.uk/api/posts';
-
     public function __construct(
-        private ScrapeServicesFactory $scrapeFactory
+        private ScrapeServicesFactory $scrapeFactory,
+        private PostScraperService $apiHandler
     )
     {
         parent::__construct();
@@ -32,9 +32,10 @@ class GetPostsListCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $roundedMaxPage = 15000;//$this->apiHandler->getRoundedMaxPage();
+        $roundedMaxPage = $this->apiHandler->getRoundedMaxPage();
         $threads = (int)$input->getOption('threads');
 
+        $output->writeln("<info>Total pages: $roundedMaxPage</info>");
         $this->scrapeFactory->makeMasterService($threads, $roundedMaxPage, $output)->handle();
 
         return Command::SUCCESS;

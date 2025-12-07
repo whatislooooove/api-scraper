@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use App\Service\PostScraperService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,7 +15,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 )]
 class ScrapeWorkerCommand extends Command
 {
-    public function __construct()
+    public function __construct(private PostScraperService $postScraper)
     {
         parent::__construct();
     }
@@ -24,13 +25,16 @@ class ScrapeWorkerCommand extends Command
         // TODO: добавить валидацию
         $this->addOption('from', null, InputOption::VALUE_OPTIONAL, 'Start label');
         $this->addOption('to', null, InputOption::VALUE_OPTIONAL, 'Finish label');
-        $this->addOption('proxy', null, InputOption::VALUE_OPTIONAL, 'Finish label');
+        $this->addOption('proxy', null, InputOption::VALUE_OPTIONAL, 'Proxy');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        echo 'Another thread' . PHP_EOL;
-        sleep(rand(3, 5));
+        $this->postScraper->setProxy($input->getOption('proxy'));
+        $posts = $this->postScraper->getPostsList();
+
+        $output->writeln('Proxy: ' . $input->getOption('proxy'));
+        $output->writeln('From page  ' . $input->getOption('from') . ' to ' . $input->getOption('to'));
 
         return Command::SUCCESS;
     }
