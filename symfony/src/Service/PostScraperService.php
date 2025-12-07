@@ -110,7 +110,7 @@ class PostScraperService
             ],
         ];
 
-        if (!$this->proxy) {
+        if ($this->proxy) {
             $params['proxy'] = $this->proxy;
         }
 

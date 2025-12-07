@@ -59,6 +59,7 @@ class ScrapeMasterService
                     } else {
                         $this->output->writeln("<error>Worker #{$item['id']} failed (exit={$exit})</error>");
                         $this->output->writeln($proc->getOutput());
+                        $this->output->writeln($proc->getErrorOutput());
                     }
                     unset($this->runningProcesses[$id]);
                 }

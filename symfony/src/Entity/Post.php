@@ -26,6 +26,9 @@ class Post
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\Column(length: 255)]
+    private ?string $externalId = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -75,6 +78,18 @@ class Post
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getExternalId(): ?string
+    {
+        return $this->externalId;
+    }
+
+    public function setExternalId(string $externalId): static
+    {
+        $this->externalId = $externalId;
 
         return $this;
     }
