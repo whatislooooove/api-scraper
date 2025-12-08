@@ -18,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ScrapeWorkerCommand extends Command
 {
     public function __construct(
-        private PostScraperService     $postScraper,
+        private PostScraperService $postScraper,
         private EntityManagerInterface $em
     )
     {
@@ -44,6 +44,7 @@ class ScrapeWorkerCommand extends Command
             $this->postScraper->setProxy($input->getOption('proxy'));
             $posts = $this->postScraper->getPostsList($i);
             // TODO: добавление нужно отсюда вынести
+            // TODO: добавить проверку на существование поста по externalId
             foreach ($posts as $post) {
                 $postObj = new Post();
                 $postObj->setExternalId($post['id']);
@@ -53,8 +54,11 @@ class ScrapeWorkerCommand extends Command
                 $this->em->persist($postObj);
             }
             $this->em->flush();
+            $this->em->clear();
+            $this->em->getConnection()->close();
             sleep(60 / 100);
         }
+        $output->writeln('Done! Now start <info>php bin/console post:get-detail</info> for update \'body\'');
 
         return Command::SUCCESS;
     }

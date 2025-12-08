@@ -1,40 +1,38 @@
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
-
-# Put parameters here that don't need to change on each machine where the app is deployed
-# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
-parameters:
-
 services:
-    # default configuration for services in *this* file
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        autowire: true
+        autoconfigure: true
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    http_client:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
 
-    http_client.retry:
-        class: Symfony\Component\HttpClient\RetryableHttpClient
-        arguments:
-            - '@http_client'
-            - '@http_client.retry_strategy'
-            - 5
-            - false
 
     http_client.retry_strategy:
         class: Symfony\Component\HttpClient\Retry\GenericRetryStrategy
         arguments:
             - [ 500, 429 ]
-            - 100
-            - 2
-            - 1000
-            - [ 'timeout' ]
+            - 3000
+            - 1.2
+            - 10000
+            - 0.3
+            - '@logger'
+            - [ 'transport_error' ]
+
+    http_client.retry:
+        class: Symfony\Component\HttpClient\RetryableHttpClient
+        arguments:
+            $client: '@http_client'
+            $strategy: '@http_client.retry_strategy'
+            $maxRetries: 15
+            $logger: '@logger'
+
+    App\Service\PostScraperService:
+        arguments:
+            $client: '@http_client.retry'
 
     App\Service\ProxyManagerService:
         arguments:

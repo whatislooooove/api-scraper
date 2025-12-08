@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use Symfony\Component\HttpClient\Exception\TransportException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class PostScraperService
@@ -10,6 +11,8 @@ class PostScraperService
     const string POST_DETAIL_API_URL = 'https://proof.moneymediagroup.co.uk/api/post/%s';
     const array MAX_PAGE_POINTS = [10, 100, 500, 3000, 10000, 15000, 30000, 50000];
     const int MAX_PAGE_ACCURACY = 0; // 0 - точный номер последней страницы
+    const int MAX_LOCAL_TRIES = 15;
+    const int DEFAULT_REQUEST_TIMEOUT = 30;
 
     private int $roundedMaxPage;
     private ?string $proxy = null;
@@ -39,13 +42,28 @@ class PostScraperService
 
     public function getPostsList(int $page = 1): array
     {
-        $response = $this->client->request(
-            'GET',
-            self::POSTS_LIST_API_URL,
-            $this->makePostListRequestParams($page)
-        );
+        $retries = 0;
+        $delayMs = 500;
+        while (true) {
+            try {
+                $retries++;
+                $response = $this->client->request(
+                    'GET',
+                    self::POSTS_LIST_API_URL,
+                    $this->makePostListRequestParams($page)
+                );
 
-        return json_decode($response->getContent(), true);
+                return json_decode($response->getContent(), true);
+            } catch (TransportException $e) {
+                echo $page . ' ' . $retries . PHP_EOL;
+                if ($retries > self::MAX_LOCAL_TRIES) {
+                    throw $e;
+                }
+
+                usleep($delayMs * 1000);
+                $delayMs = (int)($delayMs * 1.5);
+            }
+        }
     }
 
     public function getPostDetail(string $uuid): array
@@ -108,6 +126,7 @@ class PostScraperService
             'query' => [
                 'page' => $page
             ],
+            'timeout' => self::DEFAULT_REQUEST_TIMEOUT
         ];
 
         if ($this->proxy) {
