@@ -2,9 +2,9 @@
 
 namespace App\Command;
 
-use App\Entity\Post;
+use App\Factory\PostFactory;
 use App\Service\PostScraperService;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\PostService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,9 +17,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 )]
 class ScrapeWorkerCommand extends Command
 {
+    const int DELAY_IN_MS = 600000;
+
     public function __construct(
         private PostScraperService $postScraper,
-        private EntityManagerInterface $em
+        private PostService $postService,
+        private PostFactory $postFactory
     )
     {
         parent::__construct();
@@ -42,21 +45,13 @@ class ScrapeWorkerCommand extends Command
 
         for ($i = $input->getOption('from'); $i < $input->getOption('to'); $i++) {
             $this->postScraper->setProxy($input->getOption('proxy'));
-            $posts = $this->postScraper->getPostsList($i);
-            // TODO: добавление нужно отсюда вынести
-            // TODO: добавить проверку на существование поста по externalId
-            foreach ($posts as $post) {
-                $postObj = new Post();
-                $postObj->setExternalId($post['id']);
-                $postObj->setTitle($post['title']);
-                $postObj->setDescription($post['description']);
-                $postObj->setCreatedAt(new \DateTimeImmutable($post['createdAt']));
-                $this->em->persist($postObj);
+
+            foreach ($this->postScraper->getPostsList($i) as $post) {
+                $createPostInputDTO = $this->postFactory->makeCreatePostInputDTO($post);
+                $this->postService->createIfNotExists($createPostInputDTO);
             }
-            $this->em->flush();
-            $this->em->clear();
-            $this->em->getConnection()->close();
-            sleep(60 / 100);
+
+            usleep(self::DELAY_IN_MS);
         }
         $output->writeln('Done! Now start <info>php bin/console post:get-detail</info> for update \'body\'');
 

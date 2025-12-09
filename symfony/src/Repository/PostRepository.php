@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Post;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -11,33 +12,40 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class PostRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    const int BATCH_SIZE = 100;
+
+    private array $batchBuffer = [];
+
+    public function __construct(private EntityManagerInterface $em, ManagerRegistry $registry)
     {
         parent::__construct($registry, Post::class);
     }
 
-    //    /**
-    //     * @return Post[] Returns an array of Post objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function create(Post $post): Post
+    {
+        $this->em->persist($post);
+        $this->batchBuffer[] = $post;
 
-    //    public function findOneBySomeField($value): ?Post
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        if (count($this->batchBuffer) >= self::BATCH_SIZE) {
+            $this->flushBatch();
+        }
+
+        return $post;
+    }
+
+    private function flushBatch(): void
+    {
+        if (count($this->batchBuffer) === 0) {
+            return;
+        }
+
+        $this->em->flush();
+        $this->em->clear();
+        $this->batchBuffer = [];
+    }
+
+    public function __destruct()
+    {
+        $this->flushBatch();
+    }
 }
