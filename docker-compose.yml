@@ -18,16 +18,15 @@ services:
     image: postgres:18-alpine
     container_name: postgres
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-root}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
       POSTGRES_DB: ${POSTGRES_DB:-app}
-      POSTGRES_MAX_CONNECTIONS: '200'
-      POSTGRES_SHARED_BUFFERS: '256MB'
-      POSTGRES_EFFECTIVE_CACHE_SIZE: '1GB'
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./docker/conf/db/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     restart: unless-stopped
     networks:
       - internal

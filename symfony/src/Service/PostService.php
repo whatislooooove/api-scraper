@@ -16,11 +16,10 @@ class PostService
     public function createIfNotExists(CreatePostInputDTO $postDTO): Post
     {
         $post = $this->postRepository->findOneBy(['externalId' => $postDTO->externalId]);
-        // TODO: надо проверить
         if (is_null($post)) {
             $postEntityToCreate = $this->postFactory->makePost($postDTO);
 
-            $post = $this->postRepository->addToBatch($postEntityToCreate);
+            $post = $this->postRepository->create($postEntityToCreate);
         }
 
         return $post;
