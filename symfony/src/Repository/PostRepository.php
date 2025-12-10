@@ -12,10 +12,6 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class PostRepository extends ServiceEntityRepository
 {
-    const int BATCH_SIZE = 100;
-
-    private array $batchBuffer = [];
-
     public function __construct(private EntityManagerInterface $em, ManagerRegistry $registry)
     {
         parent::__construct($registry, Post::class);
@@ -24,28 +20,8 @@ class PostRepository extends ServiceEntityRepository
     public function create(Post $post): Post
     {
         $this->em->persist($post);
-        $this->batchBuffer[] = $post;
-
-        if (count($this->batchBuffer) >= self::BATCH_SIZE) {
-            $this->flushBatch();
-        }
+        $this->em->flush();
 
         return $post;
-    }
-
-    private function flushBatch(): void
-    {
-        if (count($this->batchBuffer) === 0) {
-            return;
-        }
-
-        $this->em->flush();
-        $this->em->clear();
-        $this->batchBuffer = [];
-    }
-
-    public function __destruct()
-    {
-        $this->flushBatch();
     }
 }

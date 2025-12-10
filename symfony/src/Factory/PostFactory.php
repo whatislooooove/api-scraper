@@ -14,6 +14,7 @@ class PostFactory
         $post->setTitle($postDTO->title);
         $post->setDescription($postDTO->description);
         $post->setCreatedAt($postDTO->createdAt);
+        $post->setBody($postDTO->body);
 
         return $post;
     }
@@ -24,6 +25,7 @@ class PostFactory
 
         $post->externalId = $data['id'];
         $post->title = $data['title'];
+        $post->body = $data['body'];
         $post->description = $data['description'];
         $post->createdAt = new \DateTimeImmutable($data['createdAt']);
 

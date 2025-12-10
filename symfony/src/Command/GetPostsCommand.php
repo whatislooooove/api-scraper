@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
     name: 'post:get-list',
     description: 'Get all posts from API (without \'body\')',
 )]
-class GetPostsListCommand extends Command
+class GetPostsCommand extends Command
 {
     public function __construct(
         private ScrapeServicesFactory $scrapeFactory,
@@ -26,7 +26,7 @@ class GetPostsListCommand extends Command
 
     protected function configure(): void
     {
-        //TODO: сделать валидацию threads на числа
+        //TODO: сделать валидацию threads на числа и сделать ограничение на максимальное количество процессов
         $this->addOption('threads', null, InputOption::VALUE_OPTIONAL, 'Threads count for async crawling', '100');
     }
 

@@ -2,14 +2,14 @@
 
 namespace App\Command;
 
-use App\Factory\PostFactory;
+use App\Message\GetPostDetailMessage;
 use App\Service\PostScraperService;
-use App\Service\PostService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 #[AsCommand(
     name: 'scrape:worker',
@@ -21,8 +21,7 @@ class ScrapeWorkerCommand extends Command
 
     public function __construct(
         private PostScraperService $postScraper,
-        private PostService $postService,
-        private PostFactory $postFactory
+        private MessageBusInterface $bus
     )
     {
         parent::__construct();
@@ -46,14 +45,15 @@ class ScrapeWorkerCommand extends Command
         for ($i = $input->getOption('from'); $i < $input->getOption('to'); $i++) {
             $this->postScraper->setProxy($input->getOption('proxy'));
 
-            foreach ($this->postScraper->getPostsList($i) as $post) {
-                $createPostInputDTO = $this->postFactory->makeCreatePostInputDTO($post);
-                $this->postService->createIfNotExists($createPostInputDTO);
+            foreach ($this->postScraper->getPostsListFromPage($i) as $rawPost) {
+                //TODO: $rawPost['id'] надо убрать отсюда и сделать DTO для конструктора message
+                $this->bus->dispatch(new GetPostDetailMessage($rawPost['id'], $input->getOption('proxy')));
             }
 
+            //TODO: не надо делать delay, если запрос выполнялся условно больше секунды
             usleep(self::DELAY_IN_MS);
         }
-        $output->writeln('Done! Now start <info>php bin/console post:get-detail</info> for update \'body\'');
+        $output->writeln('Done! You have initialized crawl the collection of all posts');
 
         return Command::SUCCESS;
     }

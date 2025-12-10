@@ -40,10 +40,11 @@ class PostScraperService
         return $this->roundedMaxPage;
     }
 
-    public function getPostsList(int $page = 1): array
+    public function getPostsListFromPage(int $page = 1): array
     {
         $retries = 0;
         $delayMs = 500;
+
         while (true) {
             try {
                 $retries++;
