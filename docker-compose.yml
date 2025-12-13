@@ -8,6 +8,8 @@ services:
     user: "root"
     volumes:
       - ./symfony:/var/www
+      - ./docker/conf/backend/supervisord.conf:/etc/supervisor/supervisord.conf
+      - ./docker/conf/backend/messenger.conf:/etc/supervisor/conf.d/messenger.conf
     networks:
       - internal
     restart: unless-stopped

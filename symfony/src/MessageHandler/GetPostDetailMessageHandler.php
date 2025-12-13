@@ -21,7 +21,6 @@ final class GetPostDetailMessageHandler
 
     public function __invoke(GetPostDetailMessage $message): void
     {
-        $this->postScraper->setProxy($message->getProxy());
         $post = $this->postScraper->getPostDetail($message->getUuid());
 
         $createPostInputDTO = $this->postFactory->makeCreatePostInputDTO($post);

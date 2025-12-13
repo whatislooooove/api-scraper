@@ -15,15 +15,15 @@ class PostScraperService
     const int DEFAULT_REQUEST_TIMEOUT = 30;
 
     private int $roundedMaxPage;
-    private ?string $proxy = null;
+    private ?string $proxy;
 
-    public function __construct(private HttpClientInterface $client)
+    public function __construct(
+        private HttpClientInterface $client,
+        private ProxyManagerService $pm,
+        int $consumerIndex
+    )
     {
-    }
-
-    public function setProxy(?string $proxy): void
-    {
-        $this->proxy = $proxy;
+        $this->proxy = $this->pm->getProxyById($consumerIndex);
     }
 
     public function getProxy(): ?string
@@ -123,18 +123,12 @@ class PostScraperService
 
     private function makePostListRequestParams(int $page): array
     {
-        $params = [
+        return [
             'query' => [
                 'page' => $page
             ],
             'timeout' => self::DEFAULT_REQUEST_TIMEOUT
         ];
-
-        if ($this->proxy) {
-            $params['proxy'] = $this->proxy;
-        }
-
-        return $params;
     }
 
     private function makePostDetailRequestParams(): array

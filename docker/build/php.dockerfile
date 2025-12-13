@@ -10,6 +10,7 @@ RUN apk add --no-cache \
         postgresql-dev \
         icu-dev \
         libxml2-dev \
+        supervisor \
     && docker-php-ext-install -j$(nproc) \
         pdo \
         pdo_pgsql \
@@ -40,7 +41,4 @@ RUN composer dump-autoload --optimize
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 775 /var/www
 
-# Меняем команду, т.к. для CLI приложения не нужен php-fpm
-# Используем бесконечный sleep, чтобы контейнер не завершался,
-# или можно указать вашу команду для синхронизации.
-CMD ["tail", "-f", "/dev/null"]
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]

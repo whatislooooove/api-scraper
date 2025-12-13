@@ -1,3 +1,6 @@
+parameters:
+    consumer_index: '%env(int:CONSUMER_INDEX)%'
+
 services:
     _defaults:
         autowire: true
@@ -33,6 +36,7 @@ services:
     App\Service\PostScraperService:
         arguments:
             $client: '@http_client.retry'
+            $consumerIndex: '%env(int:CONSUMER_INDEX)%'
 
     App\Service\ProxyManagerService:
         arguments:

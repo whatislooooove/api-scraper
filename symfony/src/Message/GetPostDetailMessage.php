@@ -11,7 +11,6 @@ final class GetPostDetailMessage
 
      public function __construct(
          private readonly string $uuid,
-         private readonly ?string $proxy,
      )
      {
      }
@@ -19,10 +18,5 @@ final class GetPostDetailMessage
     public function getUuid(): string
     {
         return $this->uuid;
-    }
-
-    public function getProxy(): ?string
-    {
-        return $this->proxy;
     }
 }

@@ -27,7 +27,7 @@ class GetPostsCommand extends Command
     protected function configure(): void
     {
         //TODO: сделать валидацию threads на числа и сделать ограничение на максимальное количество процессов
-        $this->addOption('threads', null, InputOption::VALUE_OPTIONAL, 'Threads count for async crawling', '100');
+        $this->addOption('threads', null, InputOption::VALUE_OPTIONAL, 'Threads count for async crawling', '15');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
