@@ -56,7 +56,7 @@ class PostScraperService
 
                 return json_decode($response->getContent(), true);
             } catch (TransportException $e) {
-                echo $page . ' ' . $retries . PHP_EOL;
+                echo 'Page - ' . $page . ', retries - ' . $retries . PHP_EOL;
                 if ($retries > self::MAX_LOCAL_TRIES) {
                     throw $e;
                 }

@@ -13,7 +13,7 @@ class MessengerQueueRepository
     public function countPendingMessages(): int
     {
         return (int) $this->connection->fetchOne(
-            'SELECT COUNT(*) FROM messenger_messages'
+            'SELECT COUNT(*) FROM messages'
         );
     }
 }

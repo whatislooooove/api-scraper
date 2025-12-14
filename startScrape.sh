@@ -1,0 +1,1 @@
+docker compose exec backend php bin/console post:get-list --env=prod --no-debug

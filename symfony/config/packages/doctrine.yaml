@@ -6,10 +6,10 @@ doctrine:
         # either here or in the DATABASE_URL env var (see .env file)
         #server_version: '16'
 
-        profiling_collect_backtrace: '%kernel.debug%'
+        profiling_collect_backtrace: false
         use_savepoints: true
     orm:
-        auto_generate_proxy_classes: true
+        auto_generate_proxy_classes: false
         enable_lazy_ghost_objects: true
         report_fields_where_declared: true
         validate_xml_mapping: true
