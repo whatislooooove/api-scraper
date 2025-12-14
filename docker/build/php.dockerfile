@@ -11,6 +11,7 @@ RUN apk add --no-cache \
         icu-dev \
         libxml2-dev \
         supervisor \
+        cronie \
     && docker-php-ext-install -j$(nproc) \
         pdo \
         pdo_pgsql \
@@ -33,6 +34,10 @@ RUN composer install --no-autoloader --no-scripts --no-progress
 
 # Копируем весь исходный код
 COPY ./symfony .
+
+COPY docker/conf/cron/root /etc/crontabs/root
+RUN chmod 600 /etc/crontabs/root \
+ && chown root:root /etc/crontabs/root
 
 # Запускаем скрипты Composer (очистка кэша, генерация автозагрузки)
 RUN composer dump-autoload --optimize
