@@ -1,2 +1,7 @@
+# Запускаем раз в день, проверяем определенное число страниц на наличие новых постов
 MAILTO=""
 0 0 * * * cd /var/www && /usr/local/bin/php bin/console post:update-list >> /var/log/cron.log 2>&1
+
+# Запускаем раз в неделю, обновляем массово все посты
+0 0 * * 0 cd /var/www && /usr/local/bin/php bin/console post:get-list >> /var/log/cron.log 2>&1
+
