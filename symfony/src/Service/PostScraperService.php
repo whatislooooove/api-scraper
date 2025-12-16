@@ -43,7 +43,7 @@ class PostScraperService
     public function getPostsListFromPage(int $page = 1): array
     {
         $retries = 0;
-        $delayMs = 500;
+        $delayMs = 250;
 
         while (true) {
             try {
