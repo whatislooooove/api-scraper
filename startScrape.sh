@@ -1,4 +1,4 @@
-THREADS_COUNT=${1:-30}
+THREADS_COUNT=${1:-5}
 
 echo "Scraping started at $THREADS_COUNT symfony-processes(post list). The process may take up to 24 hours";
 
