@@ -32,7 +32,6 @@ class ScrapeMasterService
                 PHP_BINARY,
                 'bin/console',
                 'scrape:worker',
-                '--env=prod',
                 '--no-debug',
                 sprintf('--from=%d', $chunkSize * ($i - 1) + 1),
                 sprintf('--to=%d', $chunkSize * $i),

@@ -9,33 +9,34 @@ services:
     App\:
         resource: '../src/'
 
-    http_client:
-        class: Symfony\Contracts\HttpClient\HttpClientInterface
-        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
-
-
+    # Retry strategy
     http_client.retry_strategy:
         class: Symfony\Component\HttpClient\Retry\GenericRetryStrategy
         arguments:
-            - [ 500, 429 ]
-            - 3000
-            - 1.2
-            - 10000
-            - 0.3
-            - '@logger'
-            - [ 'transport_error' ]
+            $statusCodes: [500, 429]
+            $delayMs: 3000
+            $multiplier: 1.2
+            $maxDelayMs: 15000
+            $jitter: 0.3
 
+    # Retryable client (оборачивает стандартный http_client)
     http_client.retry:
         class: Symfony\Component\HttpClient\RetryableHttpClient
         arguments:
             $client: '@http_client'
             $strategy: '@http_client.retry_strategy'
-            $maxRetries: 15
+            $maxRetries: 10
             $logger: '@logger'
 
     App\Service\PostScraperService:
         arguments:
             $client: '@http_client.retry'
+            $consumerIndex: '%env(int:CONSUMER_INDEX)%'
+
+    App\Factory\WorkerHttpClientFactory:
+        arguments:
+            $baseClient: '@http_client.retry'
+            $proxyManager: '@App\Service\ProxyManagerService'
             $consumerIndex: '%env(int:CONSUMER_INDEX)%'
 
     App\Service\ProxyManagerService:
