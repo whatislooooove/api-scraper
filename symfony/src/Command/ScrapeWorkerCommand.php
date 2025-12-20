@@ -39,7 +39,13 @@ class ScrapeWorkerCommand extends Command
 
         for ($i = $input->getOption('from'); $i < $input->getOption('to'); $i++) {
             $itemIdsToBatch = array_column($this->postScraper->getPostsListFromPage($i), 'id');
-            $this->bus->dispatch(new GetPostDetailBatchMessage($itemIdsToBatch));
+
+            $chunks = array_chunk($itemIdsToBatch, 10);
+            foreach ($chunks as $chunk) {
+                if (!empty($chunk)) {
+                    $this->bus->dispatch(new GetPostDetailBatchMessage($chunk));
+                }
+            }
         }
         $output->writeln('Done! You have initialized crawl the collection of all posts');
 

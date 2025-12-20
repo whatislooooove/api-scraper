@@ -136,8 +136,10 @@ class PostScraperService
                     if ($response->getStatusCode() === 400) {
                         $minBound = self::MAX_PAGE_POINTS[$key - 1] ?? self::MAX_PAGE_POINTS[$key];
                         $this->roundedMaxPage = $this->recursiveBinarySearch($minBound, $currentBound);
-                        break;
+                        break(2);
                     }
+
+                    break;
 
                 } catch (TransportException $e) {
                     echo 'Current bound - ' . $currentBound . ', retries - ' . $retries . PHP_EOL;

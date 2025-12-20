@@ -31,41 +31,53 @@ class PostWriteRepository
 
     public function upsertBatch(array $posts): void
     {
-        if ($posts === []) {
+        if (count($posts) === 0) {
             return;
         }
 
-        $sql = <<<SQL
-INSERT INTO post (external_id, title, description, body, created_at)
-VALUES %s
-ON CONFLICT (external_id) DO UPDATE SET
-    title = EXCLUDED.title,
-    description = EXCLUDED.description,
-    body = EXCLUDED.body,
-    created_at = EXCLUDED.created_at
-SQL;
+        $sql = $this->buildUpsertSql(count($posts));
+        $params = $this->buildParameters($posts);
 
+        $this->conn->executeStatement($sql, $params);
+    }
+
+    private function buildUpsertSql(int $count): string
+    {
         $values = [];
-        $params = [];
-
-        $i = 0;
-
-        foreach ($posts as $post) {
+        for ($i = 0; $i < $count; $i++) {
             $values[] = sprintf(
                 '(:external_id_%d, :title_%d, :description_%d, :body_%d, :created_at_%d)',
                 $i, $i, $i, $i, $i
             );
-
-            $params["external_id_$i"] = $post['external_id'];
-            $params["title_$i"] = $post['title'];
-            $params["description_$i"] = $post['description'];
-            $params["body_$i"] = $post['body'];
-            $params["created_at_$i"] = $post['created_at'];
-
-            $i++;
         }
 
-        $finalSql = sprintf($sql, implode(",\n", $values));
-        $this->conn->executeStatement($finalSql, $params);
+        return sprintf(
+            'INSERT INTO post (external_id, title, description, body, created_at)
+             VALUES %s
+             ON CONFLICT (external_id) DO UPDATE SET
+                 title = EXCLUDED.title,
+                 description = EXCLUDED.description,
+                 body = EXCLUDED.body,
+                 created_at = EXCLUDED.created_at',
+            implode(', ', $values)
+        );
+    }
+
+    private function buildParameters(array $chunk): array
+    {
+        $params = [];
+        $counter = 0;
+
+        foreach ($chunk as $i => $post) {
+            $params["external_id_$counter"] = $post['external_id'];
+            $params["title_$counter"] = $post['title'];
+            $params["description_$counter"] = $post['description'];
+            $params["body_$counter"] = $post['body'];
+            $params["created_at_$counter"] = $post['created_at'];
+
+            $counter++;
+        }
+
+        return $params;
     }
 }
