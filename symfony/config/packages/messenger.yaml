@@ -3,6 +3,11 @@ framework:
         # Uncomment this (and the failed transport below) to send failed messages to this transport for later handling.
         # failure_transport: failed
 
+        buses:
+            messenger.bus.command:
+                middleware:
+                    - send_message
+
         transports:
             # https://symfony.com/doc/current/messenger.html#transport-configuration
             # Не привязываюсь к сущности post. Возможно следует сделать отдельный транспорт для post

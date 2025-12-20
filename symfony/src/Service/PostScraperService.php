@@ -69,13 +69,28 @@ class PostScraperService
 
     public function getPostDetail(string $uuid): array
     {
-        $response = $this->client->request(
-            'GET',
-            sprintf(self::POST_DETAIL_API_URL, $uuid),
-            $this->makePostDetailRequestParams()
-        );
+        $retries = 0;
+        $delayMs = 250;
 
-        return json_decode($response->getContent(), true);
+        while (true) {
+            try {
+                $response = $this->client->request(
+                    'GET',
+                    sprintf(self::POST_DETAIL_API_URL, $uuid),
+                    $this->makePostDetailRequestParams()
+                );
+
+                return json_decode($response->getContent(), true);
+            } catch (TransportException $e) {
+                echo 'Id - ' . $uuid . ', retries - ' . $retries . PHP_EOL;
+                if ($retries > self::MAX_LOCAL_TRIES) {
+                    throw $e;
+                }
+
+                usleep($delayMs * 1000);
+                $delayMs = (int)($delayMs * 1.5);
+            }
+        }
     }
 
     private function recursiveBinarySearch(int $minBound, int $maxBound): int
@@ -104,19 +119,35 @@ class PostScraperService
     private function calculateRoundedMaxPage(): void
     {
         foreach (self::MAX_PAGE_POINTS as $key => $currentBound) {
-            $response = $this->client->request(
-                'GET',
-                self::POSTS_LIST_API_URL, [
-                    'query' => [
-                        'page' => $currentBound
-                    ],
-                ]
-            );
+            $retries = 0;
+            $delayMs = 250;
 
-            if ($response->getStatusCode() === 400) {
-                $minBound = self::MAX_PAGE_POINTS[$key - 1] ?? self::MAX_PAGE_POINTS[$key];
-                $this->roundedMaxPage = $this->recursiveBinarySearch($minBound, $currentBound);
-                break;
+            while (true) {
+                try {
+                    $response = $this->client->request(
+                        'GET',
+                        self::POSTS_LIST_API_URL, [
+                            'query' => [
+                                'page' => $currentBound
+                            ],
+                        ]
+                    );
+
+                    if ($response->getStatusCode() === 400) {
+                        $minBound = self::MAX_PAGE_POINTS[$key - 1] ?? self::MAX_PAGE_POINTS[$key];
+                        $this->roundedMaxPage = $this->recursiveBinarySearch($minBound, $currentBound);
+                        break;
+                    }
+
+                } catch (TransportException $e) {
+                    echo 'Current bound - ' . $currentBound . ', retries - ' . $retries . PHP_EOL;
+                    if ($retries > self::MAX_LOCAL_TRIES) {
+                        throw $e;
+                    }
+
+                    usleep($delayMs * 1000);
+                    $delayMs = (int)($delayMs * 1.5);
+                }
             }
         }
     }

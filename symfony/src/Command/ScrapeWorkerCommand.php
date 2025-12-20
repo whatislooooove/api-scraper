@@ -3,13 +3,13 @@
 namespace App\Command;
 
 use App\Message\GetPostDetailBatchMessage;
+use App\Messenger\CommandBus;
 use App\Service\PostScraperService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Messenger\MessageBusInterface;
 
 #[AsCommand(
     name: 'scrape:worker',
@@ -19,7 +19,7 @@ class ScrapeWorkerCommand extends Command
 {
     public function __construct(
         private PostScraperService $postScraper,
-        private MessageBusInterface $bus,
+        private CommandBus $bus,
     )
     {
         parent::__construct();

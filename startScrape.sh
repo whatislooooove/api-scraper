@@ -5,7 +5,7 @@ START_TIMESTAMP=$(date +%s)
 echo "Scraping started at $THREADS_COUNT symfony-processes(post list). The process may take up to 24 hours";
 echo "Start date: $START_TIME";
 
-docker compose exec backend php bin/console post:get-list --threads="$THREADS_COUNT" --env=prod --no-debug
+docker compose exec backend php bin/console post:get-list --threads="$THREADS_COUNT" --env=dev
 
 END_TIMESTAMP=$(date +%s)
 DURATION_SECONDS=$((END_TIMESTAMP - START_TIMESTAMP))

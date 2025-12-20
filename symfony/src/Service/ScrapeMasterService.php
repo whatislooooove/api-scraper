@@ -32,13 +32,13 @@ class ScrapeMasterService
                 PHP_BINARY,
                 'bin/console',
                 'scrape:worker',
-                '--no-debug',
+                '--env=dev',
                 sprintf('--from=%d', $chunkSize * ($i - 1) + 1),
                 sprintf('--to=%d', $chunkSize * $i),
                 sprintf('--proxy=%s', $this->proxy->getProxyById($i - 1)),
             ];
 
-            $process = new Process($cmd);
+            $process = new Process($cmd, env: $_ENV);
             $process->setTimeout(null);
 
             $this->output->writeln("<info>Starting worker $i</info>");

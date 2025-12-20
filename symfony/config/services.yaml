@@ -9,11 +9,19 @@ services:
     App\:
         resource: '../src/'
 
+    App\MessageHandler\:
+        resource: '../src/MessageHandler'
+        tags: [ 'messenger.message_handler' ]
+
+    App\Messenger\CommandBus:
+        arguments:
+            $bus: '@messenger.bus.command'
+
     # Retry strategy
     http_client.retry_strategy:
         class: Symfony\Component\HttpClient\Retry\GenericRetryStrategy
         arguments:
-            $statusCodes: [500, 429]
+            $statusCodes: [500, 429, 407]
             $delayMs: 3000
             $multiplier: 1.2
             $maxDelayMs: 15000
