@@ -14,7 +14,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 #[AsMessageHandler]
 final class GetPostDetailBatchMessageHandler
 {
-    const int MAX_RETRIES = 5;
+    const int MAX_RETRIES = 15;
     private HttpClientInterface $client;
 
     public function __construct(
@@ -69,7 +69,7 @@ final class GetPostDetailBatchMessageHandler
                     }
                 }
             } catch (TransportException $e) {
-                $this->logger->error('Transport error while processing post', [
+                $this->logger->error('Transport error while processing post. ' . $e->getMessage(), [
                     'postId' => $postId,
                     'error' => $e->getMessage(),
                 ]);
@@ -126,9 +126,11 @@ final class GetPostDetailBatchMessageHandler
         ]);
 
         $retryCount = 0;
+        $delayMs = 500;
 
         while (!empty($failedPostIds) && $retryCount < self::MAX_RETRIES) {
             $retryCount++;
+            $this->logger->warning("Retry #$retryCount." . ' Failed in chunk: ' . count($failedPostIds) . ". Delay - $delayMs ms ");
             $retryResponses = [];
 
             foreach ($failedPostIds as $postId) {
@@ -161,7 +163,7 @@ final class GetPostDetailBatchMessageHandler
                     }
                 } catch (TransportException $e) {
                     $newFailedRequests[] = $postId;
-                    $this->logger->warning('Retry failed for post', [
+                    $this->logger->warning('Retry failed for post. ' . $e->getMessage(), [
                         'postId' => $postId,
                         'retryCount' => $retryCount,
                         'error' => $e->getMessage(),
@@ -178,7 +180,8 @@ final class GetPostDetailBatchMessageHandler
                 ]);
 
                 if ($retryCount < self::MAX_RETRIES) {
-                    sleep(1);
+                    usleep($delayMs * 1000);
+                    $delayMs = (int)($delayMs * 1.5);
                 }
             }
         }

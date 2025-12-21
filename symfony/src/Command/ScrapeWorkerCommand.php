@@ -5,6 +5,7 @@ namespace App\Command;
 use App\Message\GetPostDetailBatchMessage;
 use App\Messenger\CommandBus;
 use App\Service\PostScraperService;
+use App\Service\ScrapeWorkerService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,6 +20,7 @@ class ScrapeWorkerCommand extends Command
 {
     public function __construct(
         private PostScraperService $postScraper,
+        private ScrapeWorkerService $workerService,
         private CommandBus $bus,
     )
     {
@@ -43,6 +45,7 @@ class ScrapeWorkerCommand extends Command
             $chunks = array_chunk($itemIdsToBatch, 10);
             foreach ($chunks as $chunk) {
                 if (!empty($chunk)) {
+                    $this->workerService->waitIfNeed();
                     $this->bus->dispatch(new GetPostDetailBatchMessage($chunk));
                 }
             }

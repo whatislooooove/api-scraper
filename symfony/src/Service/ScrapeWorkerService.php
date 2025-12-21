@@ -6,7 +6,7 @@ use App\Repository\DBAL\MessengerQueueRepository;
 
 class ScrapeWorkerService
 {
-    const int UNHANDLED_QUEUE_LIMIT = 10000;
+    const int UNHANDLED_QUEUE_LIMIT = 500;
 
     public function __construct(
         private MessengerQueueRepository $messengerRepository
