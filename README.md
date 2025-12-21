@@ -5,6 +5,11 @@
 ![PHP](https://img.shields.io/badge/PHP-777BB4?style=for-the-badge&logo=php&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 
+| Версия             | Ветка                 | Описание             | Ссылка                                                        |
+|--------------------|-----------------------|----------------------|---------------------------------------------------------------|
+| **Основная**       | `master`              | 1 пост на Message    | текущая страница                                              |
+| **Альтернативная** | `feature/http-stream` | 10 постов на Message | [Перейти](https://github.com/whatislooooove/api-scraper/tree/feature/http-stream) |
+
 ## Оглавление
 - [Выбор решения](#обоснование-выбора-решения)
 - [Подготовка](#подготовка)
