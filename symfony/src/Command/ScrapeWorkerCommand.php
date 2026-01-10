@@ -2,7 +2,7 @@
 
 namespace App\Command;
 
-use App\Message\GetPostDetailMessage;
+use App\Message\GetPostDetailBatchMessage;
 use App\Service\PostScraperService;
 use App\Service\ScrapeWorkerService;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -20,8 +20,7 @@ class ScrapeWorkerCommand extends Command
 {
     public function __construct(
         private PostScraperService $postScraper,
-        private MessageBusInterface $bus,
-        private ScrapeWorkerService $workerService
+        private MessageBusInterface $bus
     )
     {
         parent::__construct();
@@ -32,7 +31,6 @@ class ScrapeWorkerCommand extends Command
         // TODO: добавить валидацию
         $this->addOption('from', null, InputOption::VALUE_OPTIONAL, 'Start label');
         $this->addOption('to', null, InputOption::VALUE_OPTIONAL, 'Finish label');
-        $this->addOption('proxy', null, InputOption::VALUE_OPTIONAL, 'Proxy');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -41,10 +39,9 @@ class ScrapeWorkerCommand extends Command
 
         for ($i = $input->getOption('from'); $i < $input->getOption('to'); $i++) {
             foreach ($this->postScraper->getPostsListFromPage($i) as $rawPost) {
-                $this->workerService->waitIfNeed();
                 //TODO: $rawPost['id'] надо убрать отсюда и сделать DTO для конструктора message
                 //TODO: сделать проверку, что уже есть message с такими id и proxy
-                $this->bus->dispatch(new GetPostDetailMessage($rawPost['id']));
+                $this->bus->dispatch(new GetPostDetailBatchMessage($rawPost['id']));
             }
         }
         $output->writeln('Done! You have initialized crawl the collection of all posts');

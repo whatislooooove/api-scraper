@@ -67,15 +67,9 @@ class PostScraperService
         }
     }
 
-    public function getPostDetail(string $uuid): array
+    public function getPostDetailUrl(string $uuid): string
     {
-        $response = $this->client->request(
-            'GET',
-            sprintf(self::POST_DETAIL_API_URL, $uuid),
-            $this->makePostDetailRequestParams()
-        );
-
-        return json_decode($response->getContent(), true);
+        return sprintf(self::POST_DETAIL_API_URL, $uuid);
     }
 
     private function recursiveBinarySearch(int $minBound, int $maxBound): int
@@ -133,6 +127,7 @@ class PostScraperService
 
     private function makePostDetailRequestParams(): array
     {
+        return [];
         return $this->getProxy() ? [
             'proxy' => $this->getProxy()
         ] : [];
