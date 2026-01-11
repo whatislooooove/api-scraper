@@ -13,7 +13,7 @@ class ScrapeMasterService
         private int $threads,
         private int $itemsToHandeCount,
         private OutputInterface $output,
-        private ProxyManagerService $proxy
+        private bool $isRestart
     )
     {
     }
@@ -35,9 +35,12 @@ class ScrapeMasterService
                 '--env=prod',
                 '--no-debug',
                 sprintf('--from=%d', $chunkSize * ($i - 1) + 1),
-                sprintf('--to=%d', $chunkSize * $i),
-                sprintf('--proxy=%s', $this->proxy->getProxyById($i - 1)),
+                sprintf('--to=%d', $chunkSize * $i)
             ];
+
+            if ($this->isRestart) {
+                $cmd[] = '--restart';
+            }
 
             $process = new Process($cmd);
             $process->setTimeout(null);

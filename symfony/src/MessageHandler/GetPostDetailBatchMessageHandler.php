@@ -6,10 +6,12 @@ use App\Factory\PostFactory;
 use App\Message\GetPostDetailBatchMessage;
 use App\Service\PostScraperService;
 use App\Service\PostService;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Handler\Acknowledger;
 use Symfony\Component\Messenger\Handler\BatchHandlerInterface;
 use Symfony\Component\Messenger\Handler\BatchHandlerTrait;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[AsMessageHandler]
@@ -25,6 +27,8 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
         private PostFactory $postFactory,
         private PostService $postService,
 
+        #[Autowire(service: 'limiter.api_proxy')]
+        private RateLimiterFactory $rateLimiterFactory
     )
     {
     }
@@ -46,6 +50,8 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
 
      private function sendRequests(array $jobs): void
      {
+         $proxy = '104.207.57.169:3129';
+         $limiter = $this->rateLimiterFactory->create($proxy);
          foreach ($jobs as [$message, $ack]) {
              try {
                  $this->sentRequests[$message->getUuid()] = $this->httpClient->request(

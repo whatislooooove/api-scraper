@@ -27,16 +27,19 @@ class GetPostsCommand extends Command
     protected function configure(): void
     {
         //TODO: сделать валидацию threads на числа и сделать ограничение на максимальное количество процессов
-        $this->addOption('threads', null, InputOption::VALUE_OPTIONAL, 'Threads count for async crawling', '50');
+        $this->addOption('threads', null, InputOption::VALUE_OPTIONAL, 'Threads count for async crawling', '3');
+        $this->addOption('restart', null, InputOption::VALUE_NONE, 'Continue scraping or start again');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $roundedMaxPage = $this->apiHandler->getRoundedMaxPage();
+        $roundedMaxPage = 15000;//$this->apiHandler->getRoundedMaxPage();
         $threads = (int)$input->getOption('threads');
+        $isRestart = $input->getOption('restart');
 
         $output->writeln("<info>Total pages: $roundedMaxPage</info>");
-        $this->scrapeFactory->makeMasterService($threads, $roundedMaxPage, $output)->handle();
+        //TODO: сделать дто для передачи всех аргументов
+        $this->scrapeFactory->makeMasterService($threads, $roundedMaxPage, $output, $isRestart)->handle();
 
         return Command::SUCCESS;
     }

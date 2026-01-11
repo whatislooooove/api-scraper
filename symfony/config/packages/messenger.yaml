@@ -25,7 +25,7 @@ framework:
 
         routing:
             # Route your messages to the transports
-            'App\Message\GetPostDetailMessage': async
+            'App\Message\GetPostDetailBatchMessage': async
 
 # when@test:
 #    framework:

@@ -13,8 +13,8 @@ class ScrapeServicesFactory
     }
 
     // TODO: вынести в DTO
-    public function makeMasterService(int $threads, int $itemsToHandleCount, OutputInterface $output): ScrapeMasterService
+    public function makeMasterService(int $threads, int $itemsToHandleCount, OutputInterface $output, bool $isRestart): ScrapeMasterService
     {
-        return new ScrapeMasterService($threads, $itemsToHandleCount, $output, $this->proxy);
+        return new ScrapeMasterService($threads, $itemsToHandleCount, $output, $isRestart);
     }
 }
