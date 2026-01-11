@@ -7,6 +7,7 @@ use App\Factory\PostFactory;
 use App\Message\GetPostDetailBatchMessage;
 use App\Service\PostScraperService;
 use App\Service\PostService;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Handler\Acknowledger;
@@ -30,7 +31,8 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
 
         #[Autowire(service: 'limiter.api_proxy')]
         private RateLimiterFactory $rateLimiterFactory,
-        private ProxyManager $pm
+        private ProxyManager $pm,
+        private LoggerInterface $logger
     )
     {
     }
@@ -69,7 +71,7 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
                  $ack->ack();
              } catch (\Throwable $e) {
                  // TODO: добавить логирование и вынести туда
-                 dump($e->getMessage());
+                 $this->logger->error('On request send: ' . $e->getMessage());
                  $ack->nack($e);
              }
          }
@@ -85,7 +87,7 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
                     $createPostInputDTO = $this->postFactory->makeCreatePostInputDTO($data);
                     $this->postService->createIfNotExists($createPostInputDTO);
                 } catch (\Throwable $e) {
-                    // TODO: логирование
+                    $this->logger->error($e->getMessage());
                 }
             }
         }

@@ -1,4 +1,4 @@
-THREADS_COUNT=${1:-5}
+THREADS_COUNT=${1:-3}
 START_TIME=$(date +%H:%M:%S)
 START_TIMESTAMP=$(date +%s)
 
