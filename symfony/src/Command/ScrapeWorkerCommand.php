@@ -51,6 +51,7 @@ class ScrapeWorkerCommand extends Command
                 }
             }
 
+            //TODO: упремся в лимит 100 в минуту. Сделать паузу
             foreach ($this->postScraper->getPostsListFromPage($i) as $rawPost) {
                 //TODO: $rawPost['id'] надо убрать отсюда и сделать DTO для конструктора message
                 //TODO: сделать проверку, что уже есть message с такими id и proxy

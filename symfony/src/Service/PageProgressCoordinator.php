@@ -16,6 +16,7 @@ class PageProgressCoordinator
 
     public function clear(): void
     {
+        //TODO: сделать clear по маске `page-*`
         $this->cache->clear();
     }
 

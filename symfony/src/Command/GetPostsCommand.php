@@ -33,7 +33,7 @@ class GetPostsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $roundedMaxPage = 15000;//$this->apiHandler->getRoundedMaxPage();
+        $roundedMaxPage = $this->apiHandler->getRoundedMaxPage();
         $threads = (int)$input->getOption('threads');
         $isRestart = $input->getOption('restart');
 

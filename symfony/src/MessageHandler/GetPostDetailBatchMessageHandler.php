@@ -2,6 +2,7 @@
 
 namespace App\MessageHandler;
 
+use App\Contracts\ProxyManager;
 use App\Factory\PostFactory;
 use App\Message\GetPostDetailBatchMessage;
 use App\Service\PostScraperService;
@@ -28,7 +29,8 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
         private PostService $postService,
 
         #[Autowire(service: 'limiter.api_proxy')]
-        private RateLimiterFactory $rateLimiterFactory
+        private RateLimiterFactory $rateLimiterFactory,
+        private ProxyManager $pm
     )
     {
     }
@@ -50,13 +52,19 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
 
      private function sendRequests(array $jobs): void
      {
-         $proxy = '104.207.57.169:3129';
+         $proxy = $this->pm->acquire();
          $limiter = $this->rateLimiterFactory->create($proxy);
+         if (!$limiter->consume()->isAccepted()) {
+             $proxy = $this->pm->acquire();
+         }
+
          foreach ($jobs as [$message, $ack]) {
              try {
                  $this->sentRequests[$message->getUuid()] = $this->httpClient->request(
                      'GET',
-                     $this->postScraper->getPostDetailUrl($message->getUuid())
+                     $this->postScraper->getPostDetailUrl($message->getUuid()), [
+                         'proxy' => $proxy
+                     ]
                  );
                  $ack->ack();
              } catch (\Throwable $e) {
