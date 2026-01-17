@@ -5,6 +5,7 @@ namespace App\Command;
 use App\Message\GetPostDetailBatchMessage;
 use App\Service\PageProgressCoordinator;
 use App\Service\PostScraperService;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,7 +22,8 @@ class ScrapeWorkerCommand extends Command
     public function __construct(
         private PostScraperService $postScraper,
         private MessageBusInterface $bus,
-        private PageProgressCoordinator $pageProgress
+        private PageProgressCoordinator $pageProgress,
+        private LoggerInterface $logger
     )
     {
         parent::__construct();
@@ -46,19 +48,24 @@ class ScrapeWorkerCommand extends Command
         for ($i = $input->getOption('from'); $i < $input->getOption('to'); $i++) {
             if (!$input->getOption('restart')) {
                 if ($this->pageProgress->isScraped($i)) {
-                    $output->writeln('Page ' . $i . ' already scrapped');
+                    $this->logger->warning('Page ' . $i . ' already scrapped');
                     continue;
                 }
             }
 
             //TODO: упремся в лимит 100 в минуту. Сделать паузу
-            foreach ($this->postScraper->getPostsListFromPage($i) as $rawPost) {
-                //TODO: $rawPost['id'] надо убрать отсюда и сделать DTO для конструктора message
-                //TODO: сделать проверку, что уже есть message с такими id и proxy
-                $this->bus->dispatch(new GetPostDetailBatchMessage($rawPost['id']));
-            }
+            try {
+                foreach ($this->postScraper->getPostsListFromPage($i) as $rawPost) {
+                    //TODO: $rawPost['id'] надо убрать отсюда и сделать DTO для конструктора message
+                    //TODO: сделать проверку, что уже есть message с такими id и proxy
+                    $this->bus->dispatch(new GetPostDetailBatchMessage($rawPost['id']));
+                    //sleep(1);
+                }
 
-            $this->pageProgress->markDone($i);
+                $this->pageProgress->markDone($i);
+            } catch (\Throwable $e) {
+                $this->logger->error('error on getting page: ' . $e->getMessage());
+            }
         }
         $output->writeln('Done! You have initialized crawl the collection of all posts');
 

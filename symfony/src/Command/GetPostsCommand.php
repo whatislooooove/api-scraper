@@ -4,6 +4,7 @@ namespace App\Command;
 
 use App\Factory\ScrapeServicesFactory;
 use App\Service\PostScraperService;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,7 +19,8 @@ class GetPostsCommand extends Command
 {
     public function __construct(
         private ScrapeServicesFactory $scrapeFactory,
-        private PostScraperService $apiHandler
+        private PostScraperService $apiHandler,
+        private LoggerInterface $logger
     )
     {
         parent::__construct();
@@ -33,14 +35,19 @@ class GetPostsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $roundedMaxPage = $this->apiHandler->getRoundedMaxPage();
-        $threads = (int)$input->getOption('threads');
-        $isRestart = $input->getOption('restart');
+        try {
+            $roundedMaxPage = $this->apiHandler->getRoundedMaxPage();
+            $threads = (int)$input->getOption('threads');
+            $isRestart = $input->getOption('restart');
 
-        $output->writeln("<info>Total pages: $roundedMaxPage</info>");
-        //TODO: сделать дто для передачи всех аргументов
-        $this->scrapeFactory->makeMasterService($threads, $roundedMaxPage, $output, $isRestart)->handle();
+            $output->writeln("<info>Total pages: $roundedMaxPage</info>");
+            //TODO: сделать дто для передачи всех аргументов
+            $this->scrapeFactory->makeMasterService($threads, $roundedMaxPage, $output, $isRestart)->handle();
 
-        return Command::SUCCESS;
+            return Command::SUCCESS;
+        } catch (\Exception $e) {
+            $this->logger->error('ERROR ON GETTING PAGE: ' . $e->getMessage());
+            return Command::FAILURE;
+        }
     }
 }

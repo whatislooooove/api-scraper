@@ -38,6 +38,7 @@ services:
         arguments:
             $proxyList: '%http_proxy_list%'
             $redisDsn: '%env(REDIS_DSN)%'
+            $concurrentLimit: 10
 
     App\Contracts\ProxyManager:
        alias: App\Service\Proxy\YamlProxyService

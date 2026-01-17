@@ -49,29 +49,42 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
     }
      private function getBatchSize(): int
      {
-         return 30;
+         return 10;
      }
 
      private function sendRequests(array $jobs): void
      {
-         $proxy = $this->pm->acquire();
-         $limiter = $this->rateLimiterFactory->create($proxy);
-         if (!$limiter->consume()->isAccepted()) {
-             $proxy = $this->pm->acquire();
-         }
-
          foreach ($jobs as [$message, $ack]) {
              try {
-                 $this->sentRequests[$message->getUuid()] = $this->httpClient->request(
-                     'GET',
-                     $this->postScraper->getPostDetailUrl($message->getUuid()), [
-                         'proxy' => $proxy
-                     ]
-                 );
-                 $ack->ack();
+                 $proxy = $this->pm->acquire();
+                 if (!$proxy) {
+                     $ack->nack(new \RuntimeException('No proxy available'));
+                     continue;
+                 }
+
+                 $limiter = $this->rateLimiterFactory->create($proxy);
+                 if (!$limiter->consume()->isAccepted()) {
+                     $this->pm->release($proxy);
+                     $ack->nack(new \RuntimeException('Rate limit exceeded'));
+                     continue;
+                 }
+
+                 $this->sentRequests[$message->getUuid()] = [
+                     'response' => $this->httpClient->request(
+                         'GET',
+                         $this->postScraper->getPostDetailUrl($message->getUuid()), [
+                             'proxy' => $proxy,
+                             'timeout' => 10,
+                         ]
+                     ),
+                     'ack' => $ack,
+                     'proxy' => $proxy
+                 ];
              } catch (\Throwable $e) {
-                 // TODO: добавить логирование и вынести туда
                  $this->logger->error('On request send: ' . $e->getMessage());
+                 if (isset($proxy)) {
+                     $this->pm->release($proxy);
+                 }
                  $ack->nack($e);
              }
          }
@@ -79,17 +92,42 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
 
     private function handleResponses(): void
     {
-        foreach ($this->httpClient->stream($this->sentRequests) as $response => $chunk) {
-            if ($chunk->isLast()) {
-                try {
-                    $data = $response->toArray();
+        try {
+            $responses = array_column($this->sentRequests, 'response');
+            foreach ($this->httpClient->stream($responses) as $response => $chunk) {
+                $uuid = $this->findUuidByResponse($response);
+                if (!$uuid) {
+                    continue;
+                }
 
+                if ($chunk->isLast()) {
+                    $data = $response->toArray();
                     $createPostInputDTO = $this->postFactory->makeCreatePostInputDTO($data);
+
                     $this->postService->createIfNotExists($createPostInputDTO);
-                } catch (\Throwable $e) {
-                    $this->logger->error($e->getMessage());
+                    $this->sentRequests[$uuid]['ack']->ack();
+
+                    $this->pm->release($this->sentRequests[$uuid]['proxy']);
+                    unset($this->sentRequests[$uuid]);
                 }
             }
+        } catch (\Throwable $e) {
+            $this->logger->error($uuid . ' error: ' . $e->getMessage());
+            $this->sentRequests[$uuid]['ack']->nack($e);
+
+            $this->pm->release($this->sentRequests[$uuid]['proxy']);
+            unset($this->sentRequests[$uuid]);
         }
+    }
+
+    private function findUuidByResponse($response): ?string
+    {
+        foreach ($this->sentRequests as $uuid => $requestData) {
+            if ($requestData['response'] === $response) {
+                return $uuid;
+            }
+        }
+
+        return null;
     }
 }
