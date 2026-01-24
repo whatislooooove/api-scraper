@@ -35,7 +35,7 @@ class ScrapeMasterService
                 '--env=prod',
                 '--no-debug',
                 sprintf('--from=%d', $chunkSize * ($i - 1) + 1),
-                sprintf('--to=%d', $chunkSize * $i)
+                sprintf('--to=%d', $chunkSize * $i),
             ];
 
             if ($this->isRestart) {

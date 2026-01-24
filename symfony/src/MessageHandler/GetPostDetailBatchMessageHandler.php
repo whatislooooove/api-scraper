@@ -24,15 +24,15 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
     private array $sentRequests = [];
 
     public function __construct(
-        private PostScraperService $postScraper,
+        private PostScraperService  $postScraper,
         private HttpClientInterface $httpClient,
-        private PostFactory $postFactory,
-        private PostService $postService,
+        private PostFactory         $postFactory,
+        private PostService         $postService,
 
         #[Autowire(service: 'limiter.api_proxy')]
-        private RateLimiterFactory $rateLimiterFactory,
-        private ProxyManager $pm,
-        private LoggerInterface $logger
+        private RateLimiterFactory  $rateLimiterFactory,
+        private ProxyManager        $pm,
+        private LoggerInterface     $logger
     )
     {
     }
@@ -47,54 +47,44 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
         $this->sendRequests($jobs);
         $this->handleResponses();
     }
-     private function getBatchSize(): int
-     {
-         return 10;
-     }
 
-     private function sendRequests(array $jobs): void
-     {
-         foreach ($jobs as [$message, $ack]) {
-             try {
-                 $proxy = $this->pm->acquire();
-                 if (!$proxy) {
-                     $ack->nack(new \RuntimeException('No proxy available'));
-                     continue;
-                 }
+    private function getBatchSize(): int
+    {
+        return 10;
+    }
 
-                 $limiter = $this->rateLimiterFactory->create($proxy);
-                 if (!$limiter->consume()->isAccepted()) {
-                     $this->pm->release($proxy);
-                     $ack->nack(new \RuntimeException('Rate limit exceeded'));
-                     continue;
-                 }
+    private function sendRequests(array $jobs): void
+    {
+        foreach ($jobs as [$message, $ack]) {
+            try {
+                $proxy = $this->getFreeProxy();
 
-                 $this->sentRequests[$message->getUuid()] = [
-                     'response' => $this->httpClient->request(
-                         'GET',
-                         $this->postScraper->getPostDetailUrl($message->getUuid()), [
-                             'proxy' => $proxy,
-                             'timeout' => 10,
-                         ]
-                     ),
-                     'ack' => $ack,
-                     'proxy' => $proxy
-                 ];
-             } catch (\Throwable $e) {
-                 $this->logger->error('On request send: ' . $e->getMessage());
-                 if (isset($proxy)) {
-                     $this->pm->release($proxy);
-                 }
-                 $ack->nack($e);
-             }
-         }
-     }
+                $this->sentRequests[$message->getUuid()] = [
+                    'response' => $this->httpClient->request(
+                        'GET',
+                        $this->postScraper->getPostDetailUrl($message->getUuid()), [
+                            'proxy' => $proxy,
+                            'timeout' => 10,
+                        ]
+                    ),
+                    'ack' => $ack,
+                    'proxy' => $proxy
+                ];
+            } catch (\Throwable $e) {
+                $this->logger->error('On request send: ' . $e->getMessage());
+                if (isset($proxy)) {
+                    $this->pm->release($proxy);
+                }
+                $ack->nack($e);
+            }
+        }
+    }
 
     private function handleResponses(): void
     {
         try {
             $responses = array_column($this->sentRequests, 'response');
-            foreach ($this->httpClient->stream($responses) as $response => $chunk) {
+            foreach ($this->httpClient->stream($responses, 300) as $response => $chunk) {
                 $uuid = $this->findUuidByResponse($response);
                 if (!$uuid) {
                     continue;
@@ -129,5 +119,21 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
         }
 
         return null;
+    }
+
+    private function getFreeProxy(?string $curProxy = null): string
+    {
+        $proxy = $curProxy ?? $this->pm->acquire();
+        if (!$proxy) {
+            throw new \RuntimeException('No proxy available');
+        }
+
+        $limiter = $this->rateLimiterFactory->create($proxy);
+        if (!$limiter->consume()->isAccepted()) {
+            $proxy = $this->pm->acquire($proxy);
+            $this->getFreeProxy($proxy);
+        }
+
+        return $proxy;
     }
 }
