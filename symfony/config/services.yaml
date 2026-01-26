@@ -15,7 +15,7 @@ services:
         class: Symfony\Component\HttpClient\Retry\GenericRetryStrategy
         arguments:
             - [ 500, 429 ]
-            - 500
+            - 750
             - 1.2
             - 10000
             - 0.3

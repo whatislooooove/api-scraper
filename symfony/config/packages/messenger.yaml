@@ -1,6 +1,3 @@
-parameters:
-    env(CONSUMER_ID): '0'
-
 framework:
     messenger:
         # Uncomment this (and the failed transport below) to send failed messages to this transport for later handling.
@@ -12,20 +9,21 @@ framework:
             async:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
-                    stream: 'messenger_messages'
-                    group: 'application'
-                    consumer: 'consumer-%env(CONSUMER_ID)%'
-                    delete_after_ack: true
+                    table_name: messages
+                    queue_name: default
                     auto_setup: true
-                    lazy: false
+
                 retry_strategy:
                     max_retries: 10
-                    delay: 100000
+                    delay: 750
                     multiplier: 1.2
             # failed: 'doctrine://default?queue_name=failed'
             # sync: 'sync://'
             async_failed:
-                dsn: '%env(MESSENGER_TRANSPORT_DSN_FAILED)%'
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    table_name: failed_messages
+                    queue_name: failed
 
         failure_transport: async_failed
 

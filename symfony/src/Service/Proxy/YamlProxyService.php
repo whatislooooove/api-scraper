@@ -21,7 +21,7 @@ final class YamlProxyService implements ProxyManager
         $this->bootstrap();
     }
 
-    public function acquire(?string $curProxy = null): ?string
+    public function acquire(): ?string
     {
         foreach ($this->redis->sMembers('proxy:free') as $proxy) {
             $key = $this->activeKey($proxy);
@@ -29,14 +29,14 @@ final class YamlProxyService implements ProxyManager
             // АТОМАРНО увеличиваем счётчик
             $current = $this->redis->incr($key);
 
-            if ($current <= $this->concurrentLimit && $curProxy !== $proxy) {
+            if ($current <= $this->concurrentLimit) {
                 // если достигли лимита — убираем из free
                 if ($current === $this->concurrentLimit) {
                     $this->redis->sRem('proxy:free', $proxy);
                 }
 
                 // TTL как защита от утечек
-                $this->redis->expire($key, 60);
+                $this->redis->expire($key, 300);
 
                 $this->currentProxy = $proxy;
                 return $proxy;

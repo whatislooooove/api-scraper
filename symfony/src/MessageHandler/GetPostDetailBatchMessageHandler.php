@@ -50,7 +50,7 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
 
     private function getBatchSize(): int
     {
-        return 10;
+        return 20;
     }
 
     private function sendRequests(array $jobs): void
@@ -71,7 +71,7 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
                     'proxy' => $proxy
                 ];
             } catch (\Throwable $e) {
-                $this->logger->error('On request send: ' . $e->getMessage());
+                $this->logger->error("On request send ({$message->getUuid()})" . $e->getMessage());
                 if (isset($proxy)) {
                     $this->pm->release($proxy);
                 }
@@ -82,9 +82,9 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
 
     private function handleResponses(): void
     {
-        try {
-            $responses = array_column($this->sentRequests, 'response');
-            foreach ($this->httpClient->stream($responses, 300) as $response => $chunk) {
+        $responses = array_column($this->sentRequests, 'response');
+        foreach ($this->httpClient->stream($responses, 30) as $response => $chunk) {
+            try {
                 $uuid = $this->findUuidByResponse($response);
                 if (!$uuid) {
                     continue;
@@ -100,13 +100,13 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
                     $this->pm->release($this->sentRequests[$uuid]['proxy']);
                     unset($this->sentRequests[$uuid]);
                 }
-            }
-        } catch (\Throwable $e) {
-            $this->logger->error($uuid . ' error: ' . $e->getMessage());
-            $this->sentRequests[$uuid]['ack']->nack($e);
+            } catch (\Throwable $e) {
+                $this->logger->error($uuid . ' (proxy ' . $this->sentRequests[$uuid]['proxy'] .  ') error: ' . $e->getMessage());
+                $this->sentRequests[$uuid]['ack']->nack($e);
 
-            $this->pm->release($this->sentRequests[$uuid]['proxy']);
-            unset($this->sentRequests[$uuid]);
+                $this->pm->release($this->sentRequests[$uuid]['proxy']);
+                unset($this->sentRequests[$uuid]);
+            }
         }
     }
 
@@ -121,19 +121,27 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
         return null;
     }
 
-    private function getFreeProxy(?string $curProxy = null): string
+    private function getFreeProxy(): string
     {
-        $proxy = $curProxy ?? $this->pm->acquire();
-        if (!$proxy) {
-            throw new \RuntimeException('No proxy available');
-        }
+        while (true) {
+            $proxy = $this->pm->acquire();
 
-        $limiter = $this->rateLimiterFactory->create($proxy);
-        if (!$limiter->consume()->isAccepted()) {
-            $proxy = $this->pm->acquire($proxy);
-            $this->getFreeProxy($proxy);
-        }
+            if (!$proxy) {
+                throw new \RuntimeException('No proxy available');
+            }
 
-        return $proxy;
+            $limiter = $this->rateLimiterFactory->create($proxy);
+
+            if ($limiter->consume()->isAccepted()) {
+                $this->logger->info('Proxy acquired', [
+                    'proxy' => $proxy
+                ]);
+                return $proxy;
+            }
+            $this->pm->release($proxy);
+
+            usleep(250_000);
+        }
     }
+
 }

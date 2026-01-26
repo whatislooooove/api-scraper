@@ -53,14 +53,15 @@ class ScrapeWorkerCommand extends Command
                 }
             }
 
-            //TODO: упремся в лимит 100 в минуту. Сделать паузу
             try {
                 foreach ($this->postScraper->getPostsListFromPage($i) as $rawPost) {
                     //TODO: $rawPost['id'] надо убрать отсюда и сделать DTO для конструктора message
                     //TODO: сделать проверку, что уже есть message с такими id и proxy
                     $this->bus->dispatch(new GetPostDetailBatchMessage($rawPost['id']));
-                    //sleep(1);
                 }
+
+                // TODO: сделать rate limit на уровне транспорта очередей
+                sleep(4);
 
                 $this->pageProgress->markDone($i);
             } catch (\Throwable $e) {

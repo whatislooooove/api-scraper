@@ -12,6 +12,7 @@ doctrine:
             pool_size: 100
             pool_ttl: 3600
             persistent: true
+        logging: true
     orm:
         auto_generate_proxy_classes: false
         enable_lazy_ghost_objects: true
