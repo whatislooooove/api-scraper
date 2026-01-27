@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\PostRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PostRepository::class)]
 class Post
@@ -14,18 +15,27 @@ class Post
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Assert\NotBlank(allowNull: false, normalizer: 'trim')]
+    #[Assert\Length(min: 4, max: 255)]
     #[ORM\Column(length: 255)]
     private ?string $title = null;
 
+    #[Assert\NotBlank(allowNull: false, normalizer: 'trim')]
+    #[Assert\Length(min: 8, max: 255)]
     #[ORM\Column(length: 255)]
     private ?string $description = null;
 
+    #[Assert\NotBlank(allowNull: true, normalizer: 'trim')]
+    #[Assert\Length(min: 8, max: 255)]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $body = null;
 
+    #[Assert\Type(type: \DateTimeImmutable::class)]
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[Assert\NotBlank(allowNull: false, normalizer: 'trim')]
+    #[Assert\Length(min: 4, max: 255)]
     #[ORM\Column(length: 255, unique: true)]
     private ?string $externalId = null;
 

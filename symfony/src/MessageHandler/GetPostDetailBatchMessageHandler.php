@@ -10,6 +10,7 @@ use App\Service\PostService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
 use Symfony\Component\Messenger\Handler\Acknowledger;
 use Symfony\Component\Messenger\Handler\BatchHandlerInterface;
 use Symfony\Component\Messenger\Handler\BatchHandlerTrait;
@@ -50,7 +51,7 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
 
     private function getBatchSize(): int
     {
-        return 20;
+        return 8;
     }
 
     private function sendRequests(array $jobs): void
@@ -95,19 +96,19 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
                     $createPostInputDTO = $this->postFactory->makeCreatePostInputDTO($data);
 
                     $this->postService->createIfNotExists($createPostInputDTO);
-                    $this->sentRequests[$uuid]['ack']->ack();
-
-                    $this->pm->release($this->sentRequests[$uuid]['proxy']);
-                    unset($this->sentRequests[$uuid]);
+                    $this->success($uuid);
                 }
+            } catch (\InvalidArgumentException $e) {
+                $this->logger->error('VALIDATION: ' . $uuid . ' (proxy ' . $this->sentRequests[$uuid]['proxy'] .  ') error: ' . $e->getMessage());
+                $this->fail($uuid, $e, true);
+
             } catch (\Throwable $e) {
                 $this->logger->error($uuid . ' (proxy ' . $this->sentRequests[$uuid]['proxy'] .  ') error: ' . $e->getMessage());
-                $this->sentRequests[$uuid]['ack']->nack($e);
-
-                $this->pm->release($this->sentRequests[$uuid]['proxy']);
-                unset($this->sentRequests[$uuid]);
+                $this->fail($uuid, $e);
             }
         }
+
+        $this->postService->flushAndClear();
     }
 
     private function findUuidByResponse($response): ?string
@@ -144,4 +145,33 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
         }
     }
 
+    private function fail(
+        string $uuid,
+        \Throwable $e,
+        bool $unrecoverable = false
+    ): void {
+        $proxy = $this->sentRequests[$uuid]['proxy'] ?? null;
+
+        if ($unrecoverable) {
+            $this->sentRequests[$uuid]['ack']->nack(
+                new UnrecoverableMessageHandlingException($e->getMessage(), 0, $e)
+            );
+        } else {
+            $this->sentRequests[$uuid]['ack']->nack($e);
+        }
+
+        if ($proxy) {
+            $this->pm->release($proxy);
+        }
+
+        unset($this->sentRequests[$uuid]);
+    }
+
+    private function success(string $uuid): void
+    {
+        $this->sentRequests[$uuid]['ack']->ack();
+
+        $this->pm->release($this->sentRequests[$uuid]['proxy']);
+        unset($this->sentRequests[$uuid]);
+    }
 }

@@ -24,6 +24,7 @@
     "symfony/rate-limiter": "7.3.*",
     "symfony/redis-messenger": "7.3.*",
     "symfony/runtime": "7.3.*",
+    "symfony/validator": "7.3.*",
     "symfony/yaml": "7.3.*"
   },
   "require-dev": {
