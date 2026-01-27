@@ -9,24 +9,11 @@ class PostScraperService
 {
     const string POSTS_LIST_API_URL = 'https://proof.moneymediagroup.co.uk/api/posts';
     const string POST_DETAIL_API_URL = 'https://proof.moneymediagroup.co.uk/api/post/%s';
-    const array MAX_PAGE_POINTS = [10, 100, 500, 3000, 10000, 15000, 30000, 50000];
-    const int MAX_PAGE_ACCURACY = 0; // 0 - точный номер последней страницы
-    const int MAX_LOCAL_TRIES = 15;
+    const int MAX_LOCAL_TRIES = 7;
     const int DEFAULT_REQUEST_TIMEOUT = 30;
-
-    private int $roundedMaxPage;
 
     public function __construct(private HttpClientInterface $client)
     {
-    }
-
-    public function getRoundedMaxPage(): int
-    {
-        if (!isset($this->roundedMaxPage)) {
-            $this->calculateRoundedMaxPage();
-        }
-
-        return $this->roundedMaxPage;
     }
 
     public function getPostsListFromPage(int $page = 1): array
@@ -59,49 +46,6 @@ class PostScraperService
     public function getPostDetailUrl(string $uuid): string
     {
         return sprintf(self::POST_DETAIL_API_URL, $uuid);
-    }
-
-    private function recursiveBinarySearch(int $minBound, int $maxBound): int
-    {
-        if (($maxBound - $minBound) <= self::MAX_PAGE_ACCURACY) {
-            return $maxBound;
-        }
-
-        $currentMaxBound = $minBound + ($maxBound - $minBound) / 2;
-        $response = $this->client->request(
-            'GET',
-            self::POSTS_LIST_API_URL, [
-                'query' => [
-                    'page' => $currentMaxBound
-                ],
-            ]
-        );
-
-        if ($response->getStatusCode() === 400) {
-            return $this->recursiveBinarySearch($minBound, $currentMaxBound);
-        }
-
-        return $currentMaxBound;
-    }
-
-    private function calculateRoundedMaxPage(): void
-    {
-        foreach (self::MAX_PAGE_POINTS as $key => $currentBound) {
-            $response = $this->client->request(
-                'GET',
-                self::POSTS_LIST_API_URL, [
-                    'query' => [
-                        'page' => $currentBound
-                    ],
-                ]
-            );
-
-            if ($response->getStatusCode() === 400) {
-                $minBound = self::MAX_PAGE_POINTS[$key - 1] ?? self::MAX_PAGE_POINTS[$key];
-                $this->roundedMaxPage = $this->recursiveBinarySearch($minBound, $currentBound);
-                break;
-            }
-        }
     }
 
     private function makePostListRequestParams(int $page): array

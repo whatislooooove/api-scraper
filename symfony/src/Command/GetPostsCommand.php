@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\Factory\ScrapeServicesFactory;
+use App\Service\MaxPageDefinerService;
 use App\Service\PostScraperService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -19,8 +20,8 @@ class GetPostsCommand extends Command
 {
     public function __construct(
         private ScrapeServicesFactory $scrapeFactory,
-        private PostScraperService $apiHandler,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private MaxPageDefinerService $maxPageDefiner
     )
     {
         parent::__construct();
@@ -36,7 +37,7 @@ class GetPostsCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
-            $roundedMaxPage = $this->apiHandler->getRoundedMaxPage();
+            $roundedMaxPage = $this->maxPageDefiner->getRoundedMaxPage();
             $threads = (int)$input->getOption('threads');
             $isRestart = $input->getOption('restart');
 

@@ -51,7 +51,7 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
 
     private function getBatchSize(): int
     {
-        return 8;
+        return 12;
     }
 
     private function sendRequests(array $jobs): void
@@ -99,7 +99,7 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
                     $this->success($uuid);
                 }
             } catch (\InvalidArgumentException $e) {
-                $this->logger->error('VALIDATION: ' . $uuid . ' (proxy ' . $this->sentRequests[$uuid]['proxy'] .  ') error: ' . $e->getMessage());
+                $this->logger->error('VALIDATION ERROR: ' . $uuid . ' (proxy ' . $this->sentRequests[$uuid]['proxy'] .  ') error: ' . $e->getMessage());
                 $this->fail($uuid, $e, true);
 
             } catch (\Throwable $e) {
@@ -107,8 +107,6 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
                 $this->fail($uuid, $e);
             }
         }
-
-        $this->postService->flushAndClear();
     }
 
     private function findUuidByResponse($response): ?string
