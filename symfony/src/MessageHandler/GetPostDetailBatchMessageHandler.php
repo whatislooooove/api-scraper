@@ -51,7 +51,7 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
 
     private function getBatchSize(): int
     {
-        return 12;
+        return 5;
     }
 
     private function sendRequests(array $jobs): void
@@ -59,6 +59,11 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
         foreach ($jobs as [$message, $ack]) {
             try {
                 $proxy = $this->getFreeProxy();
+                if (!$proxy) {
+                    $this->logger->warning('Proxy timeout for message, skipping', ['uuid' => $message->getUuid()]);
+
+                    continue;
+                }
 
                 $this->sentRequests[$message->getUuid()] = [
                     'response' => $this->httpClient->request(
@@ -72,17 +77,23 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
                     'proxy' => $proxy
                 ];
             } catch (\Throwable $e) {
-                $this->logger->error("On request send ({$message->getUuid()})" . $e->getMessage());
+                $this->logger->error("On request send ({$message->getUuid()}), " . ' ' . $e->getMessage());
                 if (isset($proxy)) {
                     $this->pm->release($proxy);
                 }
-                $ack->nack($e);
+                $this->markMessageAsFailed($message, $ack, $e);
             }
         }
     }
 
     private function handleResponses(): void
     {
+        foreach ($this->sentRequests as $uuid => $data) {
+            if (isset($data['failed'])) {
+                $this->fail($uuid, $data['error']);
+            }
+        }
+
         $responses = array_column($this->sentRequests, 'response');
         foreach ($this->httpClient->stream($responses, 30) as $response => $chunk) {
             try {
@@ -107,6 +118,8 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
                 $this->fail($uuid, $e);
             }
         }
+
+        $this->postService->flushAndClear();
     }
 
     private function findUuidByResponse($response): ?string
@@ -120,28 +133,48 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
         return null;
     }
 
-    private function getFreeProxy(): string
+    private function getFreeProxy(): ?string
     {
+        $start = microtime(true);
+        $timeout = 10.0;
+
+        $attempts = 0;
+
         while (true) {
+            $attempts++;
+
             $proxy = $this->pm->acquire();
 
-            if (!$proxy) {
-                throw new \RuntimeException('No proxy available');
+            if ($proxy) {
+                $limiter = $this->rateLimiterFactory->create($proxy);
+
+                if ($limiter->consume()->isAccepted()) {
+                    $this->logger->debug('Proxy acquired', [
+                        'proxy' => $proxy,
+                        'attempts' => $attempts,
+                        'time' => round(microtime(true) - $start, 2)
+                    ]);
+                    return $proxy;
+                }
+
+                $this->pm->release($proxy);
+                $this->pm->markAsBad($proxy, 60);
             }
 
-            $limiter = $this->rateLimiterFactory->create($proxy);
-
-            if ($limiter->consume()->isAccepted()) {
-                $this->logger->info('Proxy acquired', [
-                    'proxy' => $proxy
+            $elapsed = microtime(true) - $start;
+            if ($elapsed > $timeout) {
+                $this->logger->warning('Proxy timeout reached', [
+                    'attempts' => $attempts,
+                    'timeout' => $timeout
                 ]);
-                return $proxy;
+                return null;
             }
-            $this->pm->release($proxy);
 
-            usleep(250_000);
+            $sleepMs = min(1000, 50 * pow(1.5, $attempts));
+            usleep($sleepMs * 1000);
         }
     }
+
 
     private function fail(
         string $uuid,
@@ -171,5 +204,16 @@ final class GetPostDetailBatchMessageHandler implements BatchHandlerInterface
 
         $this->pm->release($this->sentRequests[$uuid]['proxy']);
         unset($this->sentRequests[$uuid]);
+    }
+
+    private function markMessageAsFailed($message, $ack, \Throwable $e): void
+    {
+        $this->sentRequests[$message->getUuid()] = [
+            'response' => null,
+            'ack' => $ack,
+            'proxy' => null,
+            'error' => $e,
+            'failed' => true
+        ];
     }
 }

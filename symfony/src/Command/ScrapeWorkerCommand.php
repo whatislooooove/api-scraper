@@ -61,7 +61,7 @@ class ScrapeWorkerCommand extends Command
                 }
 
                 // TODO: сделать rate limit на уровне транспорта очередей
-                sleep(12);
+                sleep(20);
 
                 $this->pageProgress->markDone($i);
             } catch (\Throwable $e) {

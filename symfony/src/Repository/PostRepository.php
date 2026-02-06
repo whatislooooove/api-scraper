@@ -16,20 +16,18 @@ class PostRepository extends ServiceEntityRepository
         parent::__construct($registry, Post::class);
     }
 
-    public function create(Post $post): Post
+    public function save(Post $post): void
     {
         $this->getEntityManager()->persist($post);
-        $this->getEntityManager()->flush();
-
-        return $post;
     }
 
-    public function findLatest(): ?Post
+    public function flush(): void
     {
-        return $this->createQueryBuilder('p')
-            ->orderBy('p.createdAt', 'DESC')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+        $this->getEntityManager()->flush();
+    }
+
+    public function clear(): void
+    {
+        $this->getEntityManager()->clear();
     }
 }

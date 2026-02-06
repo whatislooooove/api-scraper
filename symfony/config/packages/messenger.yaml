@@ -20,10 +20,11 @@ framework:
             # failed: 'doctrine://default?queue_name=failed'
             # sync: 'sync://'
             async_failed:
-                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                dsn: '%env(MESSENGER_TRANSPORT_DSN_FAILED)%'
                 options:
                     table_name: failed_messages
                     queue_name: failed
+                    auto_setup: true
 
         failure_transport: async_failed
 

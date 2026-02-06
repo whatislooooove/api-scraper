@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-use App\Message\GetPostDetailMessage;
+use App\Message\GetPostDetailBatchMessage;
 use App\Repository\PostRepository;
 use Symfony\Component\Messenger\MessageBusInterface;
 
@@ -32,7 +32,7 @@ class PostsUpdateService
                 }
 
                 $this->bus->dispatch(
-                    new GetPostDetailMessage($rawPost['id'])
+                    new GetPostDetailBatchMessage($rawPost['id'])
                 );
                 $this->updatedCount++;
             }
