@@ -17,20 +17,20 @@ services:
     tty: true
     stdin_open: true
 
-#  cron:
-#    build:
-#      context: .
-#      dockerfile: ./docker/build/php.dockerfile
-#    container_name: cron
-#    working_dir: /var/www
-#    user: "root"
-#    volumes:
-#      - ./symfony:/var/www
-#      - ./docker/conf/backend/php/php-custom.ini:/usr/local/etc/php/conf.d/php-custom.ini
-#    command: [ "crond", "-f", "-x", "proc" ]
-#    networks:
-#      - internal
-#    restart: unless-stopped
+  cron:
+    build:
+      context: .
+      dockerfile: ./docker/build/php.dockerfile
+    container_name: cron
+    working_dir: /var/www
+    user: "root"
+    volumes:
+      - ./symfony:/var/www
+      - ./docker/conf/backend/php/php-custom.ini:/usr/local/etc/php/conf.d/php-custom.ini
+    command: [ "crond", "-f", "-x", "proc" ]
+    networks:
+      - internal
+    restart: unless-stopped
 
   db:
     image: postgres:18-alpine
